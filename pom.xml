@@ -91,6 +91,16 @@
 
     <repositories>
         <repository>
+            <id>drakescraft-labs-maven</id>
+            <url>https://maven.drakescraft.cl/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
             <id>mojang</id>
             <url>https://libraries.minecraft.net/</url>
         </repository>
