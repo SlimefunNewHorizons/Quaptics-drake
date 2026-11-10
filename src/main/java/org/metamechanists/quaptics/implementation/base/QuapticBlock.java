@@ -76,7 +76,11 @@ public abstract class QuapticBlock extends SlimefunItem {
                     public void onPlayerBreak(final BlockBreakEvent event, final ItemStack item, final List<ItemStack> drops) {
                         final Location location = event.getBlock().getLocation();
                         onBreak(location);
-                        getDisplayGroup(location.clone()).ifPresent(DisplayGroup::remove);
+                        getDisplayGroup(location.clone()).ifPresent(displayGroup -> {
+                            displayGroup.getDisplays().values().forEach(org.bukkit.entity.Entity::remove);
+                            displayGroup.remove();
+                        });
+                        BlockStorageAPI.removeData(location);
                         event.getBlock().setType(Material.AIR);
                     }
                 },

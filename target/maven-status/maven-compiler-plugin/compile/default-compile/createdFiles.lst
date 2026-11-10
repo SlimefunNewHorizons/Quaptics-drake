@@ -54,6 +54,7 @@ org/metamechanists/quaptics/items/groups/Guide.class
 org/metamechanists/quaptics/storage/PersistentDataTraverser.class
 org/metamechanists/quaptics/implementation/attachments/InfoPanelBlock.class
 org/metamechanists/quaptics/implementation/burnout/BurnoutManager.class
+org/metamechanists/quaptics/implementation/base/QuapticBreakListener.class
 org/metamechanists/quaptics/implementation/multiblocks/reactor/ReactorRing.class
 org/metamechanists/quaptics/utils/id/complex/ConnectionPointId.class
 org/metamechanists/quaptics/implementation/multiblocks/beacons/components/BeaconBeam.class

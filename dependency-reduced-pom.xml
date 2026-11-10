@@ -64,6 +64,12 @@
   </build>
   <repositories>
     <repository>
+      <releases />
+      <snapshots />
+      <id>drakescraft-labs-maven</id>
+      <url>https://maven.drakescraft.cl/</url>
+    </repository>
+    <repository>
       <id>mojang</id>
       <url>https://libraries.minecraft.net/</url>
     </repository>
@@ -114,7 +120,7 @@
     <maven.compiler.release>21</maven.compiler.release>
     <lombok.version>1.18.46</lombok.version>
     <networks.version>11.0.0-drake.6</networks.version>
-    <sefilib.version>0.3.1-DRAKE-SNAPSHOT</sefilib.version>
+    <sefilib.version>0.3.1-Universal-26.x-SNAPSHOT</sefilib.version>
     <jsr305.version>3.0.2</jsr305.version>
     <infinitylib.version>1.3.11-UNIVERSAL-26x-SNAPSHOT</infinitylib.version>
     <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>

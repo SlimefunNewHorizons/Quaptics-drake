@@ -42,6 +42,7 @@ public final class Quaptics extends JavaPlugin implements SlimefunAddon {
         pluginManager.registerEvents(new ModuleClickListener(), this);
         pluginManager.registerEvents(new QuapticStorage(), this);
         pluginManager.registerEvents(new ExperienceModuleListener(), this);
+        pluginManager.registerEvents(new org.metamechanists.quaptics.implementation.base.QuapticBreakListener(), this);
     }
     private void initializeRunnables() {
         new QuapticTicker().runTaskTimer(this, 0, QuapticTicker.INTERVAL_TICKS);

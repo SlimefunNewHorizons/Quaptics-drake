@@ -23,6 +23,7 @@
 /home/jack/workspace/drakescraft/Quaptics-drake/src/main/java/org/metamechanists/quaptics/implementation/base/ConnectedBlock.java
 /home/jack/workspace/drakescraft/Quaptics-drake/src/main/java/org/metamechanists/quaptics/implementation/base/EnergyConnectedBlock.java
 /home/jack/workspace/drakescraft/Quaptics-drake/src/main/java/org/metamechanists/quaptics/implementation/base/QuapticBlock.java
+/home/jack/workspace/drakescraft/Quaptics-drake/src/main/java/org/metamechanists/quaptics/implementation/base/QuapticBreakListener.java
 /home/jack/workspace/drakescraft/Quaptics-drake/src/main/java/org/metamechanists/quaptics/implementation/blocks/concentrators/EnergyConcentrator.java
 /home/jack/workspace/drakescraft/Quaptics-drake/src/main/java/org/metamechanists/quaptics/implementation/blocks/concentrators/SolarConcentrator.java
 /home/jack/workspace/drakescraft/Quaptics-drake/src/main/java/org/metamechanists/quaptics/implementation/blocks/consumers/Charger.java
