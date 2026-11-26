@@ -4,6 +4,7 @@ import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import me.mrCookieSlime.Slimefun.api.BlockStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
@@ -22,6 +23,9 @@ import java.util.UUID;
 
 public final class QuapticsProbe extends JavaPlugin {
     private int assertions;
+    private int failures;
+    private int pendingSuites;
+    private Chunk fixtureChunk;
 
     @Override
     public void onEnable() {
@@ -51,17 +55,81 @@ public final class QuapticsProbe extends JavaPlugin {
                 check(SlimefunItem.getByItem(restored) == item, "item_roundtrip_" + item.getId());
             }
             check(!Groups.getBlocks().isEmpty(), "connected_blocks_registered_" + Groups.getBlocks().size());
-            Location storage = storageRoundTrip();
-            displayLifecycle();
-            awaitStorageClear(storage, 100);
+            Location source = new Location(Bukkit.getWorlds().getFirst(), 2, 65, 0);
+            BlockDisplay control = source.getWorld().spawn(source, BlockDisplay.class);
+            getLogger().info("QUAPTICS_CONTEXT before_get_chunk loaded="
+                    + source.getWorld().isChunkLoaded(0, 0) + " valid=" + control.isValid()
+                    + " lookup=" + (Bukkit.getEntity(control.getUniqueId()) == control));
+            fixtureChunk = source.getChunk();
+            logContext("before_ticket", control);
+            control.remove();
+            check(fixtureChunk.addPluginChunkTicket(this), "fixture_chunk_ticket");
+            awaitFixtureChunk(20);
         } catch (Throwable error) {
-            finish(error);
+            recordFailure(error);
+            finish();
         }
     }
 
-    private void finish(Throwable error) {
-        if (error != null) getLogger().log(java.util.logging.Level.SEVERE, "QUAPTICS_FAIL", error);
-        getLogger().info("QUAPTICS_DONE failures=" + (error == null ? 0 : 1) + " assertions=" + assertions);
+    private void logContext(String phase, BlockDisplay control) {
+        getLogger().info("QUAPTICS_CONTEXT " + phase + " loaded=" + fixtureChunk.isLoaded()
+                + " entities_loaded=" + fixtureChunk.isEntitiesLoaded()
+                + " level=" + fixtureChunk.getLoadLevel() + " valid=" + control.isValid()
+                + " lookup=" + (Bukkit.getEntity(control.getUniqueId()) == control));
+    }
+
+    private void awaitFixtureChunk(int remainingTicks) {
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            try {
+                if (!fixtureChunk.isEntitiesLoaded() && remainingTicks > 0) {
+                    awaitFixtureChunk(remainingTicks - 1);
+                    return;
+                }
+                check(fixtureChunk.isEntitiesLoaded(), "fixture_entities_loaded");
+                Location location = new Location(fixtureChunk.getWorld(), 2, 65, 0);
+                BlockDisplay control = location.getWorld().spawn(location, BlockDisplay.class);
+                try {
+                    logContext("after_ticket", control);
+                    check(Bukkit.getEntity(control.getUniqueId()) == control, "fixture_control_lookup");
+                } finally {
+                    control.remove();
+                }
+                runSuites();
+            } catch (Throwable error) {
+                recordFailure(error);
+                finish();
+            }
+        }, 1L);
+    }
+
+    private void runSuites() {
+        pendingSuites = 2;
+        try {
+            awaitStorageClear(storageRoundTrip(), 100);
+        } catch (Throwable error) {
+            completeSuite("storage", error);
+        }
+        try {
+            displayLifecycle();
+        } catch (Throwable error) {
+            completeSuite("beam", error);
+        }
+    }
+
+    private void recordFailure(Throwable error) {
+        failures++;
+        getLogger().log(java.util.logging.Level.SEVERE, "QUAPTICS_FAIL", error);
+    }
+
+    private void completeSuite(String name, Throwable error) {
+        if (error != null) recordFailure(error);
+        getLogger().info("QUAPTICS_SUITE " + name + " success=" + (error == null));
+        if (--pendingSuites == 0) finish();
+    }
+
+    private void finish() {
+        if (fixtureChunk != null) fixtureChunk.removePluginChunkTicket(this);
+        getLogger().info("QUAPTICS_DONE failures=" + failures + " assertions=" + assertions);
         Bukkit.getScheduler().runTaskLater(this, Bukkit::shutdown, 1L);
     }
 
@@ -73,9 +141,13 @@ public final class QuapticsProbe extends JavaPlugin {
                     return;
                 }
                 check(!BlockStorageAPI.hasData(location), "storage_cleared");
-                finish(null);
+                var info = BlockStorage.getLocationInfo(location);
+                check(java.util.stream.Stream.of("id", "probe_int", "probe_double", "probe_boolean",
+                                "probe_face", "probe_vectorx", "probe_vectory", "probe_vectorz", "probe_uuid")
+                        .allMatch(key -> info.getString(key) == null), "storage_all_fields_cleared");
+                completeSuite("storage", null);
             } catch (Throwable error) {
-                finish(error);
+                completeSuite("storage", error);
             }
         }, 1L);
     }
@@ -120,16 +192,32 @@ public final class QuapticsProbe extends JavaPlugin {
         UUID id = beam.getId().getUUID();
         try {
             check(Bukkit.getEntity(id) instanceof BlockDisplay, "beam_spawned");
+            var display = (BlockDisplay) Bukkit.getEntity(id);
             beam.setMaterial(Material.RED_STAINED_GLASS);
-            check(((BlockDisplay) Bukkit.getEntity(id)).getBlock().getMaterial() == Material.RED_STAINED_GLASS,
+            check(display.getBlock().getMaterial() == Material.RED_STAINED_GLASS,
                     "beam_material");
+            var originalScale = display.getTransformation().getScale();
             beam.setThicknessAndRoll(source, target.clone().add(1, 0, 0), 0.2F, 0.5);
-            check(((BlockDisplay) Bukkit.getEntity(id)).getTransformation().getScale().isFinite(), "beam_transform");
-            var display = Bukkit.getEntity(id);
-            new DirectBeam(beam.getId()).remove();
-            check(!display.isValid(), "beam_removed");
-        } finally {
+            var scale = display.getTransformation().getScale();
+            check(scale.isFinite() && !scale.equals(originalScale), "beam_transform");
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                try {
+                    check(Bukkit.getEntity(id) == display && display.isValid(), "beam_visible_next_tick");
+                    new DirectBeam(beam.getId()).setMaterial(Material.BLUE_STAINED_GLASS);
+                    check(display.getBlock().getMaterial() == Material.BLUE_STAINED_GLASS,
+                            "beam_reconstructed_material");
+                    new DirectBeam(beam.getId()).remove();
+                    check(!display.isValid() && Bukkit.getEntity(id) == null, "beam_removed");
+                    completeSuite("beam", null);
+                } catch (Throwable error) {
+                    completeSuite("beam", error);
+                } finally {
+                    beam.remove();
+                }
+            }, 1L);
+        } catch (Throwable error) {
             beam.remove();
+            throw error;
         }
     }
 }
