@@ -1,0 +1,18 @@
+{
+  "candidate_sha256": "bd4baaadc75051b07d38ed7a9f9d6d8f88cb5dc96c1cccad7d7f34563c6fb0b5",
+  "probe_sha256": "31038ef7a21bd8fb69bb40f5087c8b1ae38df4395f5688917df65b4e46eb5fd5",
+  "slimefun_sha256": "d4f62c5ff700bf6c0f8606f03974ee3d697f0792883fa35d27dc1e1c8d298dcc",
+  "paper_sha256": "bf1dcf627364f8a631ab15250d240eb5a8e89faaac523b391e1c61367fce9ff1",
+  "warnings": [],
+  "exit_code": 0,
+  "seconds": 83.12,
+  "markers": [
+    "[17:35:29 ERROR]: [QuapticsProbe] QUAPTICS_FAIL",
+    "[17:35:29 INFO]: [QuapticsProbe] QUAPTICS_DONE failures=1 assertions=0"
+  ],
+  "errors": [
+    "[17:35:24 ERROR]: Error occurred while enabling Quaptics v0 (Is it up to date?)",
+    "Caused by: java.lang.ClassNotFoundException: io.papermc.lib.PaperLib",
+    "[17:35:29 ERROR]: [QuapticsProbe] QUAPTICS_FAIL"
+  ]
+}
