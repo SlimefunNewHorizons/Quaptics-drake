@@ -2,6 +2,7 @@ package probe;
 
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
+import me.mrCookieSlime.Slimefun.api.BlockStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -34,7 +35,6 @@ public final class QuapticsProbe extends JavaPlugin {
     }
 
     private void run() {
-        int failures = 0;
         try {
             check(Bukkit.getPluginManager().isPluginEnabled("Quaptics"), "enabled");
             check(Quaptics.getInstance() != null, "instance");
@@ -51,20 +51,43 @@ public final class QuapticsProbe extends JavaPlugin {
                 check(SlimefunItem.getByItem(restored) == item, "item_roundtrip_" + item.getId());
             }
             check(!Groups.getBlocks().isEmpty(), "connected_blocks_registered_" + Groups.getBlocks().size());
-            storageRoundTrip();
+            Location storage = storageRoundTrip();
             displayLifecycle();
+            awaitStorageClear(storage, 100);
         } catch (Throwable error) {
-            failures++;
-            getLogger().log(java.util.logging.Level.SEVERE, "QUAPTICS_FAIL", error);
-        } finally {
-            getLogger().info("QUAPTICS_DONE failures=" + failures + " assertions=" + assertions);
-            Bukkit.getScheduler().runTaskLater(this, Bukkit::shutdown, 1L);
+            finish(error);
         }
     }
 
-    private void storageRoundTrip() {
+    private void finish(Throwable error) {
+        if (error != null) getLogger().log(java.util.logging.Level.SEVERE, "QUAPTICS_FAIL", error);
+        getLogger().info("QUAPTICS_DONE failures=" + (error == null ? 0 : 1) + " assertions=" + assertions);
+        Bukkit.getScheduler().runTaskLater(this, Bukkit::shutdown, 1L);
+    }
+
+    private void awaitStorageClear(Location location, int remainingTicks) {
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            try {
+                if (BlockStorageAPI.hasData(location) && remainingTicks > 0) {
+                    awaitStorageClear(location, remainingTicks - 1);
+                    return;
+                }
+                check(!BlockStorageAPI.hasData(location), "storage_cleared");
+                finish(null);
+            } catch (Throwable error) {
+                finish(error);
+            }
+        }, 1L);
+    }
+
+    private Location storageRoundTrip() {
         Location location = new Location(Bukkit.getWorlds().getFirst(), 0, 65, 0);
         try {
+            var item = SlimefunItem.getById("QP_TRANSMITTER_1");
+            check(item != null && item.getAddon() == Quaptics.getInstance(), "storage_fixture_item");
+            BlockStorage.addBlockInfo(location, "id", item.getId());
+            check(BlockStorageAPI.hasData(location) && BlockStorageAPI.check(location) == item,
+                    "storage_fixture_registered");
             BlockStorageAPI.set(location, "probe_int", 42);
             BlockStorageAPI.set(location, "probe_double", 3.5);
             BlockStorageAPI.set(location, "probe_boolean", true);
@@ -87,7 +110,7 @@ public final class QuapticsProbe extends JavaPlugin {
         } finally {
             BlockStorageAPI.removeData(location);
         }
-        check(!BlockStorageAPI.hasData(location), "storage_cleared");
+        return location;
     }
 
     private void displayLifecycle() {
